@@ -88,6 +88,23 @@ fashion_poc_assert( false !== strpos( $card_markup, 'NORTH ARC' ), 'product card
 fashion_poc_assert( false !== strpos( $card_markup, '클라우드 러너 스톤' ), 'product card lacks Korean name' );
 fashion_poc_assert( false !== strpos( $card_markup, $featured->get_price_html() ), 'product card lacks WooCommerce price HTML' );
 fashion_poc_assert( false !== strpos( $card_markup, esc_url( get_permalink( $featured_id ) ) ), 'product card lacks current permalink' );
+fashion_poc_assert( count( $featured->get_gallery_image_ids() ) >= 2, 'featured product gallery needs at least two supporting images' );
+fashion_poc_assert( function_exists( 'fashion_child_render_loop_brand' ), 'archive brand renderer is missing' );
+fashion_poc_assert( function_exists( 'fashion_child_render_loop_badges' ), 'archive badge renderer is missing' );
+fashion_poc_assert( function_exists( 'fashion_child_catalog_title' ), 'archive title adapter is missing' );
+fashion_poc_assert( '전체 상품' === fashion_child_catalog_title( 'Shop' ), 'Shop title is not Korean' );
+
+$previous_product = $GLOBALS['product'] ?? null;
+$GLOBALS['product'] = $featured;
+ob_start();
+fashion_child_render_loop_brand();
+fashion_child_render_loop_badges();
+$loop_meta_markup = ob_get_clean();
+$GLOBALS['product'] = $previous_product;
+fashion_poc_assert( false !== strpos( $loop_meta_markup, 'NORTH ARC' ), 'archive card lacks brand' );
+fashion_poc_assert( false !== strpos( $loop_meta_markup, 'NEW' ), 'archive card lacks NEW badge' );
+fashion_poc_assert( false !== strpos( $loop_meta_markup, 'BEST' ), 'archive card lacks BEST badge' );
+fashion_poc_assert( false !== strpos( $loop_meta_markup, 'SALE' ), 'archive card lacks SALE badge' );
 
 fashion_poc_assert( has_nav_menu( 'primary' ), 'safe primary catalog menu is not assigned' );
 $menu_locations = get_nav_menu_locations();

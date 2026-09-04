@@ -78,6 +78,12 @@ for required_home_marker in 'NEW' 'BEST' 'SALE' 'fashion-editorial' 'fashion-rev
   grep -Fq "$required_home_marker" wordpress/themes/fashion-child/front-page.php \
     || fail "front page lacks required marker: $required_home_marker"
 done
+for required_archive_marker in 'woocommerce ul.products' 'grid-template-columns: repeat(2' '.fashion-archive-tools' '.single-product'; do
+  grep -Fq "$required_archive_marker" wordpress/themes/fashion-child/assets/css/catalog.css \
+    || fail "catalog stylesheet lacks archive/product marker: $required_archive_marker"
+done
+grep -Fq 'wp language plugin install woocommerce ko_KR' dev/botiga-poc/bin/init-wordpress.sh \
+  || fail "WooCommerce Korean language pack is not initialized"
 
 test ! -d wordpress/themes/botiga \
   || fail "Botiga parent source must not be committed"

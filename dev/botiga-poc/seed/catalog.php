@@ -195,6 +195,13 @@ foreach ( $products as $index => $data ) {
 	$product->set_category_ids( array( $category_ids[ $category_key ] ) );
 	$product->set_tag_ids( array_map( static fn( $tag ) => $tag_ids[ $tag ], $tags ) );
 	$product->set_image_id( $image_ids[ $category_key ] );
+	$product->set_gallery_image_ids(
+		array_slice(
+			array_values( array_diff( $image_ids, array( $image_ids[ $category_key ] ) ) ),
+			0,
+			2
+		)
+	);
 	$product->set_short_description( '절제된 실루엣과 편안한 사용감을 담은 합성 프로토타입 상품입니다.' );
 	$product->set_description( '본 상품과 이미지는 테마 검증을 위해 만든 가상 데이터입니다. 실제 판매 또는 주문에 사용되지 않습니다.' );
 	$product->update_meta_data( '_fashion_brand', $brand );

@@ -493,6 +493,168 @@ select:focus-visible {
   border-top: 1px solid var(--fashion-line);
 }
 
+/* Botiga archive: keep WooCommerce semantics while removing the big-store feel. */
+.woocommerce-shop .site-main,
+.tax-product_cat .site-main,
+.single-product .site-main {
+  margin-inline: auto;
+  max-width: var(--fashion-max);
+  padding-inline: 24px;
+}
+
+.woocommerce-shop .page-header,
+.tax-product_cat .page-header {
+  background: var(--fashion-paper);
+  padding-block: 48px 26px;
+}
+
+.woocommerce-shop .page-header h1,
+.tax-product_cat .page-header h1 {
+  font-size: clamp(30px, 4vw, 48px);
+  letter-spacing: -0.045em;
+}
+
+.fashion-archive-tools {
+  align-items: center;
+  border-block: 1px solid var(--fashion-line);
+  color: var(--fashion-muted);
+  display: flex;
+  font-size: 12px;
+  justify-content: space-between;
+  margin: 0 0 24px;
+  min-height: 48px;
+  padding-inline: 2px;
+  width: 100%;
+}
+
+.woocommerce ul.products {
+  display: grid;
+  gap: 46px 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.woocommerce ul.products::before,
+.woocommerce ul.products::after {
+  display: none;
+}
+
+.woocommerce ul.products li.product,
+.woocommerce-page ul.products li.product {
+  float: none;
+  margin: 0;
+  min-width: 0;
+  position: relative;
+  width: auto;
+}
+
+.woocommerce ul.products li.product > a {
+  display: block;
+  position: relative;
+  text-decoration: none;
+}
+
+.woocommerce ul.products li.product a img {
+  aspect-ratio: 4 / 5;
+  background: var(--fashion-soft);
+  display: block;
+  margin: 0 0 13px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.woocommerce ul.products li.product .fashion-product-badges {
+  bottom: auto;
+  left: 8px;
+  top: 8px;
+}
+
+.fashion-loop-brand {
+  color: var(--fashion-ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0 0 5px;
+}
+
+.woocommerce ul.products li.product .woocommerce-loop-product__title {
+  display: -webkit-box;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin: 0 0 8px;
+  min-height: 2.9em;
+  overflow: hidden;
+  padding: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.woocommerce ul.products li.product .price {
+  color: var(--fashion-ink);
+  font-size: 14px;
+  font-weight: 750;
+  margin: 0;
+}
+
+.woocommerce ul.products li.product .price del {
+  color: #8c8c8c;
+  font-size: 0.86em;
+  font-weight: 500;
+  opacity: 1;
+}
+
+.woocommerce ul.products li.product .price ins {
+  color: var(--fashion-sale);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.woocommerce ul.products li.product .loop-button-wrap,
+.woocommerce ul.products li.product .button,
+.woocommerce ul.products li.product .added_to_cart {
+  display: none;
+}
+
+/* Botiga single product: gallery first, product identity and support second. */
+.single-product div.product {
+  margin-top: 48px;
+}
+
+.single-product div.product .woocommerce-product-gallery img {
+  background: var(--fashion-soft);
+}
+
+.single-product div.product .summary .product_title {
+  font-size: clamp(30px, 4vw, 46px);
+  letter-spacing: -0.045em;
+  line-height: 1.14;
+  margin-bottom: 14px;
+}
+
+.single-product div.product .summary .woocommerce-product-details__short-description {
+  color: var(--fashion-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.single-product div.product .product_meta,
+.single-product div.product form.cart,
+.single-product div.product .quantity,
+.single-product div.product .single_add_to_cart_button {
+  display: none;
+}
+
+.single-product .woocommerce-tabs,
+.single-product .related.products {
+  margin-top: 76px;
+}
+
+.single-product .woocommerce-tabs h2,
+.single-product .related.products > h2 {
+  font-size: clamp(24px, 3vw, 34px);
+  letter-spacing: -0.035em;
+}
+
 @media (max-width: 767px) {
   .bhfb-header .bhfb-main_header_row .container-fluid {
     min-height: 60px;
@@ -563,6 +725,86 @@ select:focus-visible {
     flex-direction: column;
     font-size: 13px;
     line-height: 1.35;
+  }
+
+  .woocommerce-shop .site-main,
+  .tax-product_cat .site-main,
+  .single-product .site-main {
+    padding-inline: 14px;
+  }
+
+  .woocommerce-shop .page-header,
+  .tax-product_cat .page-header {
+    padding-block: 30px 12px;
+  }
+
+  .woocommerce-shop .page-header h1,
+  .tax-product_cat .page-header h1 {
+    font-size: 30px;
+  }
+
+  .fashion-archive-tools {
+    margin-bottom: 18px;
+  }
+
+  .woocommerce .woocommerce-result-count,
+  .woocommerce .woocommerce-ordering {
+    float: none;
+    margin-bottom: 14px;
+  }
+
+  .woocommerce .woocommerce-ordering select {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .woocommerce ul.products {
+    gap: 34px 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .woocommerce ul.products li.product .woocommerce-loop-product__title,
+  .woocommerce ul.products li.product .price {
+    font-size: 13px;
+  }
+
+  .woocommerce ul.products li.product .price {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.35;
+  }
+
+  .single-product div.product {
+    margin-top: 18px;
+  }
+
+  .single-product div.product .woocommerce-product-gallery,
+  .single-product div.product .summary {
+    float: none;
+    width: 100%;
+  }
+
+  .single-product div.product .summary {
+    margin-top: 26px;
+  }
+
+  .single-product div.product .summary .product_title {
+    font-size: 30px;
+  }
+
+  .single-product .fashion-product-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .single-product .fashion-action {
+    min-height: 50px;
+    width: 100%;
+  }
+
+  .single-product .woocommerce-tabs,
+  .single-product .related.products {
+    margin-top: 58px;
   }
 
   .fashion-editorial {
@@ -647,6 +889,16 @@ select:focus-visible {
 
   .fashion-product-card__brand {
     font-size: 10px;
+  }
+
+  .woocommerce-shop .site-main,
+  .tax-product_cat .site-main,
+  .single-product .site-main {
+    padding-inline: 12px;
+  }
+
+  .woocommerce ul.products {
+    gap-inline: 8px;
   }
 }
 

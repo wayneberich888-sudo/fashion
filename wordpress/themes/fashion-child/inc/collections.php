@@ -134,3 +134,64 @@ function fashion_child_render_collection( $key, $eyebrow, $title ) {
 	</section>
 	<?php
 }
+
+/**
+ * Render the current product brand in Botiga's standard archive card.
+ */
+function fashion_child_render_loop_brand() {
+	global $product;
+	if ( ! $product instanceof WC_Product ) {
+		return;
+	}
+
+	$brand = fashion_child_product_brand( $product );
+	if ( '' !== $brand ) {
+		printf( '<p class="fashion-loop-brand">%s</p>', esc_html( $brand ) );
+	}
+}
+add_action( 'woocommerce_shop_loop_item_title', 'fashion_child_render_loop_brand', 5 );
+
+/**
+ * Render data-backed badges over the standard archive image.
+ */
+function fashion_child_render_loop_badges() {
+	global $product;
+	if ( $product instanceof WC_Product ) {
+		fashion_child_render_product_badges( $product );
+	}
+}
+add_action( 'woocommerce_before_shop_loop_item_title', 'fashion_child_render_loop_badges', 20 );
+
+/**
+ * Localize the standard Shop archive title without changing category names.
+ *
+ * @param string $title Existing archive title.
+ * @return string
+ */
+function fashion_child_catalog_title( $title ) {
+	return 'Shop' === $title ? '전체 상품' : $title;
+}
+add_filter( 'woocommerce_page_title', 'fashion_child_catalog_title' );
+
+/**
+ * Add a compact archive affordance while retaining native ordering controls.
+ */
+function fashion_child_render_archive_tools() {
+	if ( ! is_shop() && ! is_product_category() ) {
+		return;
+	}
+
+	echo '<div class="fashion-archive-tools">';
+	echo '<span>' . esc_html__( '카테고리 탐색', 'fashion-child' ) . '</span>';
+	echo '<span>' . esc_html__( '정렬 · 필터', 'fashion-child' ) . '</span>';
+	echo '</div>';
+}
+add_action( 'woocommerce_before_shop_loop', 'fashion_child_render_archive_tools', 15 );
+
+/**
+ * Replace WooCommerce's default SALE badge with the shared badge set.
+ */
+function fashion_child_remove_default_loop_sale_flash() {
+	remove_action( 'woocommerce_before_shop_loop_item_title', 'woocommerce_show_product_loop_sale_flash', 10 );
+}
+add_action( 'wp', 'fashion_child_remove_default_loop_sale_flash', 100 );

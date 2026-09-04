@@ -68,6 +68,10 @@ if [ "$(wp option get WPLANG --allow-root 2>/dev/null || true)" != 'ko_KR' ]; th
   fi
 fi
 
+if ! wp language plugin list woocommerce --status=installed --field=language --allow-root 2>/dev/null | grep -Fxq 'ko_KR'; then
+  wp language plugin install woocommerce ko_KR --allow-root
+fi
+
 wp option update timezone_string 'Asia/Seoul' --allow-root >/dev/null
 wp option update blogdescription '한국 모바일 패션 카탈로그 프로토타입' --allow-root >/dev/null
 wp rewrite structure '/%postname%/' --allow-root >/dev/null
