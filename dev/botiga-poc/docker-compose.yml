@@ -1,0 +1,105 @@
+name: fashion_botiga_poc
+
+services:
+  db:
+    image: mariadb:11.8.3
+    restart: "no"
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD_FILE: /run/secrets/db_password
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+    secrets:
+      - db_password
+      - db_root_password
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - poc_internal
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mariadb-admin ping -h 127.0.0.1 -u root --password="$$(cat /run/secrets/db_root_password)" --silent
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  wordpress:
+    image: wordpress:7.1.0-php8.3-apache
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+      WORDPRESS_DEBUG: "1"
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_ENVIRONMENT_TYPE', 'local' );
+        define( 'WP_HOME', 'http://127.0.0.1:8097' );
+        define( 'WP_SITEURL', 'http://127.0.0.1:8097' );
+        define( 'DISALLOW_FILE_EDIT', true );
+        define( 'FS_METHOD', 'direct' );
+    secrets:
+      - db_password
+    ports:
+      - "127.0.0.1:8097:80"
+    volumes:
+      - wp_data:/var/www/html
+      - ../../wordpress/themes/fashion-child:/var/www/html/wp-content/themes/fashion-child:ro
+    networks:
+      - poc_frontend
+      - poc_internal
+
+  cli:
+    image: wordpress:cli-2.12.0-php8.3
+    restart: "no"
+    user: "33:33"
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+    entrypoint: []
+    command: ["wp", "--info"]
+    secrets:
+      - db_password
+      - wp_admin_password
+    volumes:
+      - wp_data:/var/www/html
+      - ../../wordpress/themes/fashion-child:/var/www/html/wp-content/themes/fashion-child:ro
+      - ./bin:/workspace/bin:ro
+      - ./seed:/workspace/seed:ro
+      - ./tests:/workspace/tests:ro
+    working_dir: /var/www/html
+    networks:
+      - poc_frontend
+      - poc_internal
+
+secrets:
+  db_password:
+    file: ./.runtime/db_password
+  db_root_password:
+    file: ./.runtime/db_root_password
+  wp_admin_password:
+    file: ./.runtime/wp_admin_password
+
+volumes:
+  db_data:
+    name: fashion_botiga_poc_db_data
+  wp_data:
+    name: fashion_botiga_poc_wp_data
+
+networks:
+  poc_frontend:
+    name: fashion_botiga_poc_frontend
+  poc_internal:
+    name: fashion_botiga_poc_internal
+    internal: true
