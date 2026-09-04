@@ -54,6 +54,24 @@ fashion_poc_assert( '' !== $featured->get_regular_price(), 'featured product reg
 fashion_poc_assert( '' !== $featured->get_sale_price(), 'featured product sale price is missing' );
 fashion_poc_assert( $featured->get_date_on_sale_to() instanceof WC_DateTime, 'featured Sale End is missing' );
 fashion_poc_assert( $featured->get_date_on_sale_to()->getTimestamp() > time(), 'featured Sale End is not in the future' );
+fashion_poc_assert( function_exists( 'fashion_child_sale_end_ms' ), 'sale-end adapter is missing' );
+fashion_poc_assert(
+	$featured->get_date_on_sale_to()->getTimestamp() * 1000 === fashion_child_sale_end_ms( $featured ),
+	'countdown timestamp must equal WooCommerce Sale End'
+);
+fashion_poc_assert( '' === (string) $featured->get_meta( '_fashion_sale_end', true ), 'parallel sale-end metadata is forbidden' );
+
+fashion_poc_assert( function_exists( 'fashion_child_render_product_support' ), 'product support renderer is missing' );
+ob_start();
+fashion_child_render_product_support( $featured );
+$support_markup = ob_get_clean();
+fashion_poc_assert( false !== strpos( $support_markup, 'data-product-sku="FPOC-001"' ), 'support markup lacks current SKU' );
+fashion_poc_assert( false !== strpos( $support_markup, 'data-product-url="' . esc_url( get_permalink( $featured_id ) ) . '"' ), 'support markup lacks current product URL' );
+fashion_poc_assert( false !== strpos( $support_markup, 'data-sale-end="' ), 'support markup lacks WooCommerce sale end' );
+fashion_poc_assert( false !== strpos( $support_markup, '카카오' ), 'Kakao consultation CTA is missing' );
+fashion_poc_assert( false === apply_filters( 'woocommerce_is_purchasable', true, $featured ), 'fixture product is still purchasable on the front end' );
+fashion_poc_assert( false === (bool) apply_filters( 'theme_mod_enable_header_cart', true ), 'desktop header cart remains enabled' );
+fashion_poc_assert( false === (bool) apply_filters( 'theme_mod_enable_mobile_header_cart', true ), 'mobile header cart remains enabled' );
 
 $expected_categories = array( '신발', '가방', '의류', '향수', '액세서리' );
 foreach ( $expected_categories as $category_name ) {

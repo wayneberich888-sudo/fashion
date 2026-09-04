@@ -33,6 +33,27 @@ function fashion_child_enqueue_assets() {
 		array( 'botiga-parent' ),
 		wp_get_theme()->get( 'Version' )
 	);
+
+	$catalog_css = get_stylesheet_directory() . '/assets/css/catalog.css';
+	if ( file_exists( $catalog_css ) ) {
+		wp_enqueue_style(
+			'fashion-catalog',
+			get_stylesheet_directory_uri() . '/assets/css/catalog.css',
+			array( 'fashion-child' ),
+			(string) filemtime( $catalog_css )
+		);
+	}
+
+	$catalog_js = get_stylesheet_directory() . '/assets/js/catalog.js';
+	if ( file_exists( $catalog_js ) ) {
+		wp_enqueue_script(
+			'fashion-catalog',
+			get_stylesheet_directory_uri() . '/assets/js/catalog.js',
+			array(),
+			(string) filemtime( $catalog_js ),
+			true
+		);
+	}
 }
 add_action( 'wp_enqueue_scripts', 'fashion_child_enqueue_assets', 20 );
 

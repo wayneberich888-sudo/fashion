@@ -54,6 +54,20 @@ grep -Fq "add_action( 'after_setup_theme'" wordpress/themes/fashion-child/functi
   || fail "child theme setup hook is missing"
 grep -Fq "add_action( 'wp_enqueue_scripts'" wordpress/themes/fashion-child/functions.php \
   || fail "child theme asset hook is missing"
+test -f wordpress/themes/fashion-child/inc/catalog-mode.php \
+  || fail "catalog-mode.php is missing"
+grep -Fq 'woocommerce_template_loop_add_to_cart' wordpress/themes/fashion-child/inc/catalog-mode.php \
+  || fail "loop Add to Cart removal is missing"
+grep -Fq 'woocommerce_template_single_add_to_cart' wordpress/themes/fashion-child/inc/catalog-mode.php \
+  || fail "single Add to Cart removal is missing"
+grep -Fq "'enable_header_cart'" wordpress/themes/fashion-child/inc/catalog-mode.php \
+  || fail "desktop header cart is not disabled"
+grep -Fq "'enable_mobile_header_cart'" wordpress/themes/fashion-child/inc/catalog-mode.php \
+  || fail "mobile header cart is not disabled"
+test -f wordpress/themes/fashion-child/inc/product-detail.php \
+  || fail "product-detail.php is missing"
+test -f wordpress/themes/fashion-child/assets/js/catalog.js \
+  || fail "catalog interaction script is missing"
 
 test ! -d wordpress/themes/botiga \
   || fail "Botiga parent source must not be committed"
@@ -73,12 +87,13 @@ if rg -n --hidden \
   fail "potential credential or local personal path found"
 fi
 
-if test -f wordpress/themes/fashion-child/inc/product-detail.php; then
-  grep -Rqs 'get_date_on_sale_to' wordpress/themes/fashion-child/inc/product-detail.php \
-    || fail "sale countdown is not sourced from WooCommerce Sale End"
-  if grep -Rqs '_fashion_sale_end' wordpress/themes/fashion-child; then
-    fail "parallel sale-end metadata is forbidden"
-  fi
+grep -Rqs 'get_date_on_sale_to' wordpress/themes/fashion-child/inc/product-detail.php \
+  || fail "sale countdown is not sourced from WooCommerce Sale End"
+if grep -Rqs '_fashion_sale_end' wordpress/themes/fashion-child; then
+  fail "parallel sale-end metadata is forbidden"
 fi
+
+test -z "$(find wordpress/themes/fashion-child -path '*/woocommerce/*' -type f -print -quit)" \
+  || fail "WooCommerce template overrides are not permitted in the prototype"
 
 printf 'SOURCE_CONTRACTS_PASS\n'
