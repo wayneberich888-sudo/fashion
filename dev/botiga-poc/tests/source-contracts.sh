@@ -74,6 +74,10 @@ test -f wordpress/themes/fashion-child/front-page.php \
   || fail "front-page.php is missing"
 test -f wordpress/themes/fashion-child/assets/css/catalog.css \
   || fail "catalog stylesheet is missing"
+test -f dev/botiga-poc/tests/catalog_test.py \
+  || fail "browser acceptance test is missing"
+test -x dev/botiga-poc/bin/run-validation.sh \
+  || fail "complete validation runner is missing or not executable"
 for required_home_marker in 'NEW' 'BEST' 'SALE' 'fashion-editorial' 'fashion-review' 'fashion-bottom-nav'; do
   grep -Fq "$required_home_marker" wordpress/themes/fashion-child/front-page.php \
     || fail "front page lacks required marker: $required_home_marker"

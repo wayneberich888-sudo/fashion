@@ -79,7 +79,7 @@
     copyText(payload).then(function () {
       if (consultation) {
         container.dataset.consultationPayload = payload;
-        setStatus(container, '카카오 상담 정보가 준비되었습니다 · ' + sku, 'success');
+        setStatus(container, '카카오 상담 정보가 준비되었습니다 · ' + sku + ' · ' + url, 'success');
       } else {
         setStatus(container, '현재 상품 링크를 복사했습니다.', 'success');
       }
