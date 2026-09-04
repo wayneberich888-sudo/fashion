@@ -277,4 +277,46 @@ update_option( 'woocommerce_price_num_decimals', '0' );
 update_option( 'woocommerce_enable_reviews', 'yes' );
 update_option( 'posts_per_page', 12 );
 
+$menu = wp_get_nav_menu_object( 'fashion-catalog' );
+if ( ! $menu instanceof WP_Term ) {
+	$menu_id = wp_create_nav_menu( 'FASHION Catalog' );
+	if ( is_wp_error( $menu_id ) ) {
+		throw new RuntimeException( $menu_id->get_error_message() );
+	}
+	$menu = wp_get_nav_menu_object( $menu_id );
+}
+
+$menu_items = wp_get_nav_menu_items( $menu->term_id );
+if ( empty( $menu_items ) ) {
+	$home_url = home_url( '/' );
+	$links    = array(
+		array( 'NEW', $home_url . '#new' ),
+		array( 'BEST', $home_url . '#best' ),
+		array( 'SALE', $home_url . '#sale' ),
+		array( '전체', get_permalink( $shop_page_id ) ),
+	);
+	foreach ( $category_specs as $key => $spec ) {
+		$term_url = get_term_link( $category_ids[ $key ], 'product_cat' );
+		if ( ! is_wp_error( $term_url ) ) {
+			$links[] = array( $spec[0], $term_url );
+		}
+	}
+
+	foreach ( $links as $link ) {
+		wp_update_nav_menu_item(
+			$menu->term_id,
+			0,
+			array(
+				'menu-item-title'  => $link[0],
+				'menu-item-url'    => $link[1],
+				'menu-item-status' => 'publish',
+			)
+		);
+	}
+}
+
+$locations            = get_theme_mod( 'nav_menu_locations', array() );
+$locations['primary'] = (int) $menu->term_id;
+set_theme_mod( 'nav_menu_locations', $locations );
+
 printf( "CATALOG_SEED_PASS products=%d images=%d reviews=%d\n", count( $products ), count( $image_ids ), count( $reviews ) );

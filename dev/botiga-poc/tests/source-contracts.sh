@@ -68,6 +68,16 @@ test -f wordpress/themes/fashion-child/inc/product-detail.php \
   || fail "product-detail.php is missing"
 test -f wordpress/themes/fashion-child/assets/js/catalog.js \
   || fail "catalog interaction script is missing"
+test -f wordpress/themes/fashion-child/inc/collections.php \
+  || fail "collections.php is missing"
+test -f wordpress/themes/fashion-child/front-page.php \
+  || fail "front-page.php is missing"
+test -f wordpress/themes/fashion-child/assets/css/catalog.css \
+  || fail "catalog stylesheet is missing"
+for required_home_marker in 'NEW' 'BEST' 'SALE' 'fashion-editorial' 'fashion-review' 'fashion-bottom-nav'; do
+  grep -Fq "$required_home_marker" wordpress/themes/fashion-child/front-page.php \
+    || fail "front page lacks required marker: $required_home_marker"
+done
 
 test ! -d wordpress/themes/botiga \
   || fail "Botiga parent source must not be committed"

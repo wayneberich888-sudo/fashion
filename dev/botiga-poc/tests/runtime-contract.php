@@ -72,6 +72,30 @@ fashion_poc_assert( false !== strpos( $support_markup, '카카오' ), 'Kakao con
 fashion_poc_assert( false === apply_filters( 'woocommerce_is_purchasable', true, $featured ), 'fixture product is still purchasable on the front end' );
 fashion_poc_assert( false === (bool) apply_filters( 'theme_mod_enable_header_cart', true ), 'desktop header cart remains enabled' );
 fashion_poc_assert( false === (bool) apply_filters( 'theme_mod_enable_mobile_header_cart', true ), 'mobile header cart remains enabled' );
+fashion_poc_assert( function_exists( 'fashion_child_get_collection' ), 'product collection query is missing' );
+fashion_poc_assert( function_exists( 'fashion_child_render_product_card' ), 'product card renderer is missing' );
+
+foreach ( array( 'new', 'best', 'sale' ) as $collection_name ) {
+	$collection_products = fashion_child_get_collection( $collection_name, 6 );
+	fashion_poc_assert( ! empty( $collection_products ), 'empty home collection: ' . $collection_name );
+	fashion_poc_assert( $collection_products[0] instanceof WC_Product, 'collection contains a non-product item' );
+}
+
+ob_start();
+fashion_child_render_product_card( $featured );
+$card_markup = ob_get_clean();
+fashion_poc_assert( false !== strpos( $card_markup, 'NORTH ARC' ), 'product card lacks brand' );
+fashion_poc_assert( false !== strpos( $card_markup, '클라우드 러너 스톤' ), 'product card lacks Korean name' );
+fashion_poc_assert( false !== strpos( $card_markup, $featured->get_price_html() ), 'product card lacks WooCommerce price HTML' );
+fashion_poc_assert( false !== strpos( $card_markup, esc_url( get_permalink( $featured_id ) ) ), 'product card lacks current permalink' );
+
+fashion_poc_assert( has_nav_menu( 'primary' ), 'safe primary catalog menu is not assigned' );
+$menu_locations = get_nav_menu_locations();
+$menu_items     = wp_get_nav_menu_items( $menu_locations['primary'] );
+$menu_titles    = array_map( static fn( $item ) => strtolower( $item->title ), $menu_items );
+foreach ( array( 'cart', 'checkout', 'my account' ) as $forbidden_menu_title ) {
+	fashion_poc_assert( ! in_array( $forbidden_menu_title, $menu_titles, true ), 'transaction page appears in primary menu' );
+}
 
 $expected_categories = array( '신발', '가방', '의류', '향수', '액세서리' );
 foreach ( $expected_categories as $category_name ) {
