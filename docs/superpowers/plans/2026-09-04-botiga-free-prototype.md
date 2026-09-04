@@ -27,7 +27,7 @@
 
 ## File map
 
-- `.gitignore`: excludes local runtime secrets, Playwright dependencies/results, and disposable evidence intermediates.
+- `.gitignore`: excludes local runtime secrets, Python caches, Playwright results, and disposable evidence intermediates.
 - `dev/botiga-poc/docker-compose.yml`: defines the isolated database, WordPress, and WP-CLI services.
 - `dev/botiga-poc/Makefile`: exposes reproducible `prepare`, `up`, `init`, `test`, `evidence`, and `down` commands.
 - `dev/botiga-poc/bin/prepare-runtime.sh`: creates untracked random local secret files without printing them.
@@ -36,9 +36,7 @@
 - `dev/botiga-poc/seed/catalog.php`: idempotently creates taxonomy, 25 Simple Products, sale schedules, generated placeholder media, and synthetic reviews.
 - `dev/botiga-poc/tests/source-contracts.sh`: enforces repository, parent-theme, workflow, and source-level requirements.
 - `dev/botiga-poc/tests/runtime-contract.php`: validates WooCommerce runtime data and front-end contract with WordPress loaded.
-- `dev/botiga-poc/tests/package.json` and `package-lock.json`: pin Playwright test tooling only.
-- `dev/botiga-poc/tests/playwright.config.js`: uses the loopback base URL and deterministic screenshot/output paths.
-- `dev/botiga-poc/tests/catalog.spec.js`: tests pages, responsive layout, commerce-data provenance, and interactions.
+- `dev/botiga-poc/tests/catalog_test.py`: uses native Python Playwright to test pages, responsive layout, commerce-data provenance, interactions, and deterministic screenshots.
 - `wordpress/themes/fashion-child/style.css`: WordPress child-theme metadata and minimal root import.
 - `wordpress/themes/fashion-child/functions.php`: theme bootstrap and focused include loading.
 - `wordpress/themes/fashion-child/inc/catalog-mode.php`: removes visible transaction affordances.
@@ -98,10 +96,8 @@ Add only runtime-derived paths:
 
 ```gitignore
 dev/botiga-poc/.runtime/
-dev/botiga-poc/tests/node_modules/
-dev/botiga-poc/tests/playwright-report/
+dev/botiga-poc/tests/__pycache__/
 dev/botiga-poc/tests/test-results/
-dev/botiga-poc/tests/.last-run.json
 ```
 
 - [ ] **Step 4: Verify the workflow is unchanged and commit the contracts**
@@ -385,10 +381,7 @@ Commit: `feat: tailor Botiga catalog and product views`
 ### Task 7: Add browser acceptance tests and capture real evidence
 
 **Files:**
-- Create: `dev/botiga-poc/tests/package.json`
-- Create: `dev/botiga-poc/tests/package-lock.json`
-- Create: `dev/botiga-poc/tests/playwright.config.js`
-- Create: `dev/botiga-poc/tests/catalog.spec.js`
+- Create: `dev/botiga-poc/tests/catalog_test.py`
 - Modify: `dev/botiga-poc/bin/run-validation.sh`
 - Create: `docs/evidence/p3-t001-alt001/mobile-home-390.png`
 - Create: `docs/evidence/p3-t001-alt001/mobile-shop-390.png`
@@ -396,7 +389,7 @@ Commit: `feat: tailor Botiga catalog and product views`
 - Create: `docs/evidence/p3-t001-alt001/mobile-home-360.png`
 - Create: `docs/evidence/p3-t001-alt001/mobile-product-430.png`
 - Create: `docs/evidence/p3-t001-alt001/desktop-home-1440.png`
-- Test: `dev/botiga-poc/tests/catalog.spec.js`
+- Test: `dev/botiga-poc/tests/catalog_test.py`
 
 **Interfaces:**
 - Consumes: loopback runtime and stable fixture product/category URLs.
@@ -404,16 +397,15 @@ Commit: `feat: tailor Botiga catalog and product views`
 
 - [ ] **Step 1: Write browser tests and verify RED where UI gaps remain**
 
-Use Playwright tests that, for each of 360, 390, and 430 px, navigate to home, Shop, a category, and the featured sale product and assert:
+Use synchronous Python Playwright tests that, for each of 360, 390, and 430 px, navigate to home, Shop, a category, and the featured sale product and assert:
 
-```js
-await expect(page.locator('html')).toHaveAttribute('lang', /ko/);
-expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-await expect(page.locator('.products')).toHaveCSS('grid-template-columns', /.+ .+/);
-await expect(page.getByRole('link', { name: /장바구니|Cart/i })).toHaveCount(0);
-await expect(page.getByRole('button', { name: /Add to cart|장바구니/i })).toHaveCount(0);
-await expect(page.locator('[data-product-sku="FPOC-001"]')).toBeVisible();
-await expect(page.locator('[data-sale-end]')).toBeVisible();
+```python
+page.goto(url, wait_until="networkidle")
+assert page.locator("html").get_attribute("lang").startswith("ko")
+assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+assert page.locator("a, button").filter(has_text=re.compile(r"장바구니|Cart|Add to cart", re.I)).count() == 0
+assert page.locator('[data-product-sku="FPOC-001"]').is_visible()
+assert page.locator("[data-sale-end]").is_visible()
 ```
 
 Also capture `console.error`, `pageerror`, failed document requests, and HTTP 5xx as failures.
