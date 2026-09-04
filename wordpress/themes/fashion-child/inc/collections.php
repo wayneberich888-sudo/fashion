@@ -46,13 +46,18 @@ function fashion_child_get_collection( $collection, $limit = 6 ) {
 }
 
 /**
- * Return the prototype brand stored on the standard product record.
+ * Return the formal brand name supplied by the core plugin.
  *
  * @param WC_Product $product Product object.
  * @return string
  */
 function fashion_child_product_brand( WC_Product $product ) {
-	return (string) $product->get_meta( '_fashion_brand', true );
+	if ( ! function_exists( 'fashion_core_get_product_brand' ) ) {
+		return '';
+	}
+
+	$brand = fashion_core_get_product_brand( $product );
+	return $brand instanceof WP_Term ? $brand->name : '';
 }
 
 /**
@@ -89,11 +94,19 @@ function fashion_child_render_product_badges( WC_Product $product ) {
  * @param WC_Product $product Product object.
  */
 function fashion_child_render_product_card( WC_Product $product ) {
-	$url   = get_permalink( $product->get_id() );
+	if ( ! function_exists( 'fashion_core_get_product_identity' ) ) {
+		return;
+	}
+
+	$identity = fashion_core_get_product_identity( $product );
+	if ( ! is_array( $identity ) ) {
+		return;
+	}
+
 	$brand = fashion_child_product_brand( $product );
 	?>
-	<article class="fashion-product-card" data-product-sku="<?php echo esc_attr( $product->get_sku() ); ?>">
-		<a class="fashion-product-card__media" href="<?php echo esc_url( $url ); ?>" aria-label="<?php echo esc_attr( $product->get_name() ); ?>">
+	<article class="fashion-product-card" data-product-sku="<?php echo esc_attr( $identity['sku'] ); ?>">
+		<a class="fashion-product-card__media" href="<?php echo esc_url( $identity['url'] ); ?>" aria-label="<?php echo esc_attr( $product->get_name() ); ?>">
 			<?php fashion_child_render_product_badges( $product ); ?>
 			<?php echo wp_kses_post( $product->get_image( 'woocommerce_thumbnail', array( 'class' => 'fashion-product-card__image', 'loading' => 'lazy' ) ) ); ?>
 		</a>
@@ -101,7 +114,7 @@ function fashion_child_render_product_card( WC_Product $product ) {
 			<?php if ( '' !== $brand ) : ?>
 				<p class="fashion-product-card__brand"><?php echo esc_html( $brand ); ?></p>
 			<?php endif; ?>
-			<h3 class="fashion-product-card__title"><a href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( $product->get_name() ); ?></a></h3>
+			<h3 class="fashion-product-card__title"><a href="<?php echo esc_url( $identity['url'] ); ?>"><?php echo esc_html( $product->get_name() ); ?></a></h3>
 			<div class="fashion-product-card__price"><?php echo $product->get_price_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 		</div>
 	</article>
@@ -195,3 +208,54 @@ function fashion_child_remove_default_loop_sale_flash() {
 	remove_action( 'woocommerce_before_shop_loop_item_title', 'woocommerce_show_product_loop_sale_flash', 10 );
 }
 add_action( 'wp', 'fashion_child_remove_default_loop_sale_flash', 100 );
+
+/**
+ * Return recent approved WooCommerce reviews for homepage presentation.
+ *
+ * @param int $limit Maximum review count.
+ * @return WP_Comment[]
+ */
+function fashion_child_get_recent_reviews( $limit = 2 ) {
+	return get_comments(
+		array(
+			'status'  => 'approve',
+			'type'    => 'review',
+			'number'  => max( 1, (int) $limit ),
+			'orderby' => 'comment_date_gmt',
+			'order'   => 'DESC',
+		)
+	);
+}
+
+/**
+ * Render the homepage review section from standard WooCommerce reviews.
+ */
+function fashion_child_render_reviews() {
+	$reviews = fashion_child_get_recent_reviews( 2 );
+	?>
+	<section class="fashion-review" aria-labelledby="fashion-review-title">
+		<header class="fashion-section-heading">
+			<div>
+				<p>REAL NOTES</p>
+				<h2 id="fashion-review-title"><?php esc_html_e( '먼저 경험한 이야기', 'fashion-child' ); ?></h2>
+			</div>
+		</header>
+		<div class="fashion-review__grid">
+			<?php if ( empty( $reviews ) ) : ?>
+				<p class="fashion-review__empty"><?php esc_html_e( '아직 등록된 리뷰가 없습니다.', 'fashion-child' ); ?></p>
+			<?php else : ?>
+				<?php foreach ( $reviews as $review ) : ?>
+					<?php $rating = max( 0, min( 5, (int) get_comment_meta( $review->comment_ID, 'rating', true ) ) ); ?>
+					<blockquote>
+						<p>“<?php echo esc_html( get_comment_text( $review ) ); ?>”</p>
+						<footer>
+							<span aria-label="<?php echo esc_attr( sprintf( '별점 %d점', $rating ) ); ?>"><?php echo esc_html( str_repeat( '★', $rating ) . str_repeat( '☆', 5 - $rating ) ); ?></span>
+							<?php echo esc_html( $review->comment_author ); ?>
+						</footer>
+					</blockquote>
+				<?php endforeach; ?>
+			<?php endif; ?>
+		</div>
+	</section>
+	<?php
+}

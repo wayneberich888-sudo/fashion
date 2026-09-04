@@ -57,7 +57,7 @@ function fashion_child_enqueue_assets() {
 }
 add_action( 'wp_enqueue_scripts', 'fashion_child_enqueue_assets', 20 );
 
-foreach ( array( 'catalog-mode.php', 'collections.php', 'product-detail.php' ) as $fashion_child_include ) {
+foreach ( array( 'storefront-presentation.php', 'collections.php', 'product-detail.php' ) as $fashion_child_include ) {
 	$fashion_child_path = get_stylesheet_directory() . '/inc/' . $fashion_child_include;
 	if ( file_exists( $fashion_child_path ) ) {
 		require_once $fashion_child_path;

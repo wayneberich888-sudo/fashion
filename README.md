@@ -11,16 +11,19 @@
 ## 技术原则
 
 - WordPress + WooCommerce 作为成熟底座。
-- 优先购买并套用 1 个正版成熟商业主题。
-- 允许使用 1～3 个必要的成熟插件。
-- 优先顺序：主题原生 > WordPress/WooCommerce 原生 > 成熟插件 > 少量配置/CSS > 定制开发。
+- 正式父主题采用 WordPress.org 的 **Botiga Free**，不修改或提交父主题源码。
+- `fashion-child` 是项目自有视觉/模板展示层，负责页面结构、商品展示、韩文排版及前端交互。
+- `fashion-core` 是项目自有轻量业务规则层，负责目录模式、交易页路由、商品身份与品牌数据接口。
+- WoodMart 商业主题路线已完成评估，但已被通过原型验收的 Botiga Free 路线取代，当前不采购。
+- 后续允许使用 1～3 个确有必要且完成独立选型的成熟插件。
+- 优先顺序：WordPress/WooCommerce 原生 > Botiga Free 原生 > 成熟插件 > 少量配置/CSS > 项目自有轻量代码。
 - 成熟方案可以替代时不自研；非核心功能允许简化或取消。
 - 商品、分类、品牌、价格、CSV 导入等使用 WooCommerce 原生数据结构，不重做后台。
 
 ## 当前已确认的首版范围
 
 - 扁平大分类：鞋履、包袋、服饰、香水、配饰。
-- 独立品牌维度。
+- 独立品牌维度，正式复用 WooCommerce `product_brand` taxonomy。
 - NEW / BEST / SALE / 编辑精选等专题入口。
 - 首页采用 B-Lite：商品流为主，穿搭和真实评价为辅助，动态栏目尽量自动生成。
 - 每个颜色或明显不同版本建立为独立 Simple Product；不使用复杂变体，不在网站选择尺码。
@@ -42,8 +45,8 @@
 
 ## 当前阶段
 
-当前仅进行产品基线、成熟主题和插件选型、视觉方案及执行文档规划，尚未开始业务代码开发。旧 `krshop` 项目被冻结，仅作历史参考，不作为本仓库需求或代码来源。
+当前已进入 **Botiga Free 正式前台基础开发**。通过验收的本地 PoC 正在固化为 `Botiga Free + fashion-child + fashion-core` 正式路线；主题与插件职责分离，WooCommerce 继续作为商品事实源。旧 `krshop` 项目被冻结，仅作历史参考，不作为本仓库需求或代码来源。
 
-- Hostinger WordPress 部署通道已建立，首版为手动 GitHub Actions + SSH/rsync，正式业务代码尚未开始。
+- Hostinger WordPress 部署通道已建立，首版为手动 GitHub Actions + SSH/rsync；当前前台基础任务仅在本机隔离环境开发与验收，尚未部署正式商城代码。
 
 本仓库是新项目唯一正式事实源。

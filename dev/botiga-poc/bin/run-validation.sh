@@ -17,6 +17,7 @@ bash dev/botiga-poc/tests/source-contracts.sh
 
 $compose run --rm cli wp eval-file /workspace/tests/runtime-contract.php --allow-root
 $compose run --rm cli sh -lc 'find /var/www/html/wp-content/themes/fashion-child -type f -name "*.php" -exec php -l {} \;'
+$compose run --rm cli sh -lc 'find /var/www/html/wp-content/plugins/fashion-core -type f -name "*.php" -exec php -l {} \;'
 
 node --check wordpress/themes/fashion-child/assets/js/catalog.js
 PYTHONPYCACHEPREFIX="$poc_dir/.runtime/pycache" "$playwright_python" -m py_compile dev/botiga-poc/tests/catalog_test.py

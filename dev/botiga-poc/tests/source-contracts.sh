@@ -19,6 +19,8 @@ grep -Fq 'internal: true' dev/botiga-poc/docker-compose.yml \
   || fail "private database network is not declared"
 grep -Fq '../../wordpress/themes/fashion-child:/var/www/html/wp-content/themes/fashion-child:ro' dev/botiga-poc/docker-compose.yml \
   || fail "child theme is not mounted read-only"
+grep -Fq '../../wordpress/plugins/fashion-core:/var/www/html/wp-content/plugins/fashion-core:ro' dev/botiga-poc/docker-compose.yml \
+  || fail "fashion-core is not mounted read-only"
 grep -Fq 'user: "33:33"' dev/botiga-poc/docker-compose.yml \
   || fail "WP-CLI user does not match the WordPress volume owner"
 test -f dev/botiga-poc/bin/prepare-runtime.sh \
@@ -36,6 +38,8 @@ if grep -Fq -- '--hard' dev/botiga-poc/bin/init-wordpress.sh; then
 fi
 grep -Fq 'wp plugin is-active woocommerce' dev/botiga-poc/bin/init-wordpress.sh \
   || fail "WooCommerce activation is not idempotent"
+grep -Fq 'wp plugin is-active fashion-core' dev/botiga-poc/bin/init-wordpress.sh \
+  || fail "fashion-core activation is not idempotent"
 grep -Fq 'wp option get stylesheet' dev/botiga-poc/bin/init-wordpress.sh \
   || fail "child-theme activation is not idempotent"
 grep -Fq 'wp option get WPLANG' dev/botiga-poc/bin/init-wordpress.sh \
@@ -51,16 +55,32 @@ grep -Fq "add_action( 'after_setup_theme'" wordpress/themes/fashion-child/functi
   || fail "child theme setup hook is missing"
 grep -Fq "add_action( 'wp_enqueue_scripts'" wordpress/themes/fashion-child/functions.php \
   || fail "child theme asset hook is missing"
-test -f wordpress/themes/fashion-child/inc/catalog-mode.php \
-  || fail "catalog-mode.php is missing"
-grep -Fq 'woocommerce_template_loop_add_to_cart' wordpress/themes/fashion-child/inc/catalog-mode.php \
-  || fail "loop Add to Cart removal is missing"
-grep -Fq 'woocommerce_template_single_add_to_cart' wordpress/themes/fashion-child/inc/catalog-mode.php \
-  || fail "single Add to Cart removal is missing"
-grep -Fq "'enable_header_cart'" wordpress/themes/fashion-child/inc/catalog-mode.php \
+test ! -f wordpress/themes/fashion-child/inc/catalog-mode.php \
+  || fail "catalog business rules remain in the child theme"
+test -f wordpress/themes/fashion-child/inc/storefront-presentation.php \
+  || fail "storefront-presentation.php is missing"
+grep -Fq "'enable_header_cart'" wordpress/themes/fashion-child/inc/storefront-presentation.php \
   || fail "desktop header cart is not disabled"
-grep -Fq "'enable_mobile_header_cart'" wordpress/themes/fashion-child/inc/catalog-mode.php \
+grep -Fq "'enable_mobile_header_cart'" wordpress/themes/fashion-child/inc/storefront-presentation.php \
   || fail "mobile header cart is not disabled"
+if rg -n 'woocommerce_(variation_)?is_purchasable|template_redirect' wordpress/themes/fashion-child 2>/dev/null; then
+  fail "catalog business rules must not be implemented by fashion-child"
+fi
+if rg -ni 'Local-only|로컬 프로토타입|실제 상담 계정|FPOC-' wordpress/themes/fashion-child 2>/dev/null; then
+  fail "customer-facing prototype residue remains in fashion-child"
+fi
+
+test -f wordpress/plugins/fashion-core/fashion-core.php \
+  || fail "fashion-core plugin entry point is missing"
+for fashion_core_include in catalog-mode.php product-identity.php brand.php; do
+  test -f "wordpress/plugins/fashion-core/inc/$fashion_core_include" \
+    || fail "fashion-core include is missing: $fashion_core_include"
+done
+grep -Fq 'Requires Plugins: woocommerce' wordpress/plugins/fashion-core/fashion-core.php \
+  || fail "fashion-core does not declare its WooCommerce dependency"
+if rg -ni 'botiga|wp-content/themes' wordpress/plugins/fashion-core 2>/dev/null; then
+  fail "fashion-core depends on a parent-theme implementation"
+fi
 test -f wordpress/themes/fashion-child/inc/product-detail.php \
   || fail "product-detail.php is missing"
 test -f wordpress/themes/fashion-child/assets/js/catalog.js \
@@ -75,6 +95,8 @@ test -f dev/botiga-poc/tests/catalog_test.py \
   || fail "browser acceptance test is missing"
 test -x dev/botiga-poc/bin/run-validation.sh \
   || fail "complete validation runner is missing or not executable"
+grep -Fq 'wp-content/plugins/fashion-core' dev/botiga-poc/bin/run-validation.sh \
+  || fail "fashion-core PHP linting is missing"
 for required_home_marker in 'NEW' 'BEST' 'SALE' 'fashion-editorial' 'fashion-review' 'fashion-bottom-nav'; do
   grep -Fq "$required_home_marker" wordpress/themes/fashion-child/front-page.php \
     || fail "front page lacks required marker: $required_home_marker"
@@ -100,17 +122,20 @@ if rg -n --hidden \
   -g '!**/source-contracts.sh' \
   -g '!.runtime/**' \
   'BEGIN ([A-Z ]+ )?PRIVATE KEY|github_pat_|ghp_[A-Za-z0-9]|/Users/[A-Za-z0-9._-]+/' \
-  dev/botiga-poc wordpress/themes/fashion-child 2>/dev/null; then
+  dev/botiga-poc wordpress/themes/fashion-child wordpress/plugins/fashion-core 2>/dev/null; then
   fail "potential credential or local personal path found"
 fi
 
-grep -Rqs 'get_date_on_sale_to' wordpress/themes/fashion-child/inc/product-detail.php \
+grep -Rqs 'get_date_on_sale_to' wordpress/plugins/fashion-core/inc/product-identity.php \
   || fail "sale countdown is not sourced from WooCommerce Sale End"
-if grep -Rqs '_fashion_sale_end' wordpress/themes/fashion-child; then
+if grep -Rqs '_fashion_sale_end' wordpress/themes/fashion-child wordpress/plugins/fashion-core; then
   fail "parallel sale-end metadata is forbidden"
+fi
+if grep -Rqs '_fashion_brand' wordpress/themes/fashion-child wordpress/plugins/fashion-core; then
+  fail "formal brand rendering still depends on prototype meta"
 fi
 
 test -z "$(find wordpress/themes/fashion-child -path '*/woocommerce/*' -type f -print -quit)" \
-  || fail "WooCommerce template overrides are not permitted in the prototype"
+  || fail "WooCommerce template overrides are not permitted in the foundation"
 
 printf 'SOURCE_CONTRACTS_PASS\n'

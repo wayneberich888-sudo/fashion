@@ -1,6 +1,6 @@
 <?php
 /**
- * Runtime data contract for the isolated Botiga prototype.
+ * Runtime data contract for the isolated Botiga storefront foundation.
  */
 
 defined( 'ABSPATH' ) || exit( 1 );
@@ -18,6 +18,14 @@ function fashion_poc_assert( $condition, $message ) {
 }
 
 fashion_poc_assert( function_exists( 'wc_get_products' ), 'WooCommerce is not loaded' );
+fashion_poc_assert(
+	in_array( 'fashion-core/fashion-core.php', (array) get_option( 'active_plugins', array() ), true ),
+	'fashion-core is not active'
+);
+fashion_poc_assert( function_exists( 'fashion_core_get_product_identity' ), 'fashion-core identity API is missing' );
+fashion_poc_assert( function_exists( 'fashion_core_brand_taxonomy' ), 'fashion-core brand API is missing' );
+fashion_poc_assert( function_exists( 'fashion_core_get_product_brand' ), 'fashion-core brand resolver is missing' );
+fashion_poc_assert( function_exists( 'fashion_core_catalog_destination_url' ), 'fashion-core catalog destination is missing' );
 
 $products = wc_get_products(
 	array(
@@ -54,24 +62,81 @@ fashion_poc_assert( '' !== $featured->get_regular_price(), 'featured product reg
 fashion_poc_assert( '' !== $featured->get_sale_price(), 'featured product sale price is missing' );
 fashion_poc_assert( $featured->get_date_on_sale_to() instanceof WC_DateTime, 'featured Sale End is missing' );
 fashion_poc_assert( $featured->get_date_on_sale_to()->getTimestamp() > time(), 'featured Sale End is not in the future' );
-fashion_poc_assert( function_exists( 'fashion_child_sale_end_ms' ), 'sale-end adapter is missing' );
+fashion_poc_assert( '' === (string) $featured->get_meta( '_fashion_sale_end', true ), 'parallel sale-end metadata is forbidden' );
+
+$identity = fashion_core_get_product_identity( $featured );
+fashion_poc_assert( is_array( $identity ), 'fashion-core did not return product identity' );
 fashion_poc_assert(
-	$featured->get_date_on_sale_to()->getTimestamp() * 1000 === fashion_child_sale_end_ms( $featured ),
+	array( 'id', 'sku', 'url', 'regular_price', 'sale_price', 'sale_end' ) === array_keys( $identity ),
+	'product identity keys are unstable'
+);
+fashion_poc_assert( $featured_id === $identity['id'], 'product identity ID differs from WooCommerce' );
+fashion_poc_assert( 'FPOC-001' === $identity['sku'], 'product identity SKU differs from WooCommerce' );
+fashion_poc_assert( get_permalink( $featured_id ) === $identity['url'], 'product identity URL differs from the permalink' );
+fashion_poc_assert( $featured->get_regular_price() === $identity['regular_price'], 'Regular Price differs from WooCommerce' );
+fashion_poc_assert( $featured->get_sale_price() === $identity['sale_price'], 'Sale Price differs from WooCommerce' );
+fashion_poc_assert(
+	$featured->get_date_on_sale_to()->getTimestamp() === $identity['sale_end'],
 	'countdown timestamp must equal WooCommerce Sale End'
 );
-fashion_poc_assert( '' === (string) $featured->get_meta( '_fashion_sale_end', true ), 'parallel sale-end metadata is forbidden' );
+
+$brand_taxonomy = fashion_core_brand_taxonomy();
+fashion_poc_assert( 'product_brand' === $brand_taxonomy, 'WooCommerce product_brand must be reused in this runtime' );
+fashion_poc_assert( taxonomy_exists( 'product_brand' ), 'WooCommerce product_brand taxonomy is missing' );
+fashion_poc_assert( ! taxonomy_exists( 'fashion_brand' ), 'a parallel project brand taxonomy was registered' );
+
+$brand_slugs = array();
+foreach ( $products as $product ) {
+	$brand_terms = wp_get_post_terms( $product->get_id(), $brand_taxonomy );
+	fashion_poc_assert( ! is_wp_error( $brand_terms ), 'brand lookup returned an error' );
+	fashion_poc_assert( 1 === count( $brand_terms ), 'every product must have exactly one formal brand' );
+	fashion_poc_assert( '' === (string) $product->get_meta( '_fashion_brand', true ), 'legacy brand meta remains on a product' );
+	$brand_slugs[] = $brand_terms[0]->slug;
+}
+$brand_slugs = array_values( array_unique( $brand_slugs ) );
+fashion_poc_assert( count( $brand_slugs ) >= 2, 'at least two formal brands are required' );
+
+foreach ( array_slice( $brand_slugs, 0, 2 ) as $brand_slug ) {
+	$brand_query = new WP_Query(
+		array(
+			'post_type'      => 'product',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'tax_query'      => array(
+				array(
+					'taxonomy' => $brand_taxonomy,
+					'field'    => 'slug',
+					'terms'    => $brand_slug,
+				),
+			),
+		)
+	);
+	fashion_poc_assert( $brand_query->have_posts(), 'formal brand query returned no products: ' . $brand_slug );
+}
+wp_reset_postdata();
+
+$featured_brand = fashion_core_get_product_brand( $featured );
+fashion_poc_assert( $featured_brand instanceof WP_Term, 'featured product brand is missing' );
+fashion_poc_assert( 'NORTH ARC' === $featured_brand->name, 'featured product brand is incorrect' );
 
 fashion_poc_assert( function_exists( 'fashion_child_render_product_support' ), 'product support renderer is missing' );
 ob_start();
 fashion_child_render_product_support( $featured );
 $support_markup = ob_get_clean();
-fashion_poc_assert( false !== strpos( $support_markup, 'data-product-sku="FPOC-001"' ), 'support markup lacks current SKU' );
-fashion_poc_assert( false !== strpos( $support_markup, 'data-product-url="' . esc_url( get_permalink( $featured_id ) ) . '"' ), 'support markup lacks current product URL' );
-fashion_poc_assert( false !== strpos( $support_markup, 'data-sale-end="' ), 'support markup lacks WooCommerce sale end' );
+fashion_poc_assert( false !== strpos( $support_markup, 'data-product-sku="' . esc_attr( $identity['sku'] ) . '"' ), 'theme support SKU differs from fashion-core' );
+fashion_poc_assert( false !== strpos( $support_markup, 'data-product-url="' . esc_url( $identity['url'] ) . '"' ), 'theme support URL differs from fashion-core' );
+fashion_poc_assert( false !== strpos( $support_markup, 'data-sale-end="' . ( $identity['sale_end'] * 1000 ) . '"' ), 'theme Sale End differs from fashion-core' );
 fashion_poc_assert( false !== strpos( $support_markup, '카카오' ), 'Kakao consultation CTA is missing' );
-fashion_poc_assert( false === apply_filters( 'woocommerce_is_purchasable', true, $featured ), 'fixture product is still purchasable on the front end' );
+fashion_poc_assert( false === strpos( $support_markup, '로컬 프로토타입' ), 'customer-facing prototype copy remains' );
+
+fashion_poc_assert( false === apply_filters( 'woocommerce_is_purchasable', true, $featured ), 'fixture product is still purchasable' );
+fashion_poc_assert( false === apply_filters( 'woocommerce_variation_is_purchasable', true, $featured ), 'variation purchase filter is not disabled' );
+fashion_poc_assert( false === function_exists( 'fashion_child_catalog_is_purchasable' ), 'purchase business rule remains in the theme' );
 fashion_poc_assert( false === (bool) apply_filters( 'theme_mod_enable_header_cart', true ), 'desktop header cart remains enabled' );
 fashion_poc_assert( false === (bool) apply_filters( 'theme_mod_enable_mobile_header_cart', true ), 'mobile header cart remains enabled' );
+fashion_poc_assert( wc_get_page_permalink( 'shop' ) === fashion_core_catalog_destination_url(), 'catalog redirect destination is not Shop' );
+
 fashion_poc_assert( function_exists( 'fashion_child_get_collection' ), 'product collection query is missing' );
 fashion_poc_assert( function_exists( 'fashion_child_render_product_card' ), 'product card renderer is missing' );
 
@@ -84,24 +149,25 @@ foreach ( array( 'new', 'best', 'sale' ) as $collection_name ) {
 ob_start();
 fashion_child_render_product_card( $featured );
 $card_markup = ob_get_clean();
-fashion_poc_assert( false !== strpos( $card_markup, 'NORTH ARC' ), 'product card lacks brand' );
+fashion_poc_assert( false !== strpos( $card_markup, 'NORTH ARC' ), 'product card lacks taxonomy-backed brand' );
 fashion_poc_assert( false !== strpos( $card_markup, '클라우드 러너 스톤' ), 'product card lacks Korean name' );
 fashion_poc_assert( false !== strpos( $card_markup, $featured->get_price_html() ), 'product card lacks WooCommerce price HTML' );
-fashion_poc_assert( false !== strpos( $card_markup, esc_url( get_permalink( $featured_id ) ) ), 'product card lacks current permalink' );
+fashion_poc_assert( false !== strpos( $card_markup, esc_url( $identity['url'] ) ), 'product card URL differs from fashion-core' );
+fashion_poc_assert( false !== strpos( $card_markup, 'data-product-sku="FPOC-001"' ), 'product card SKU differs from fashion-core' );
 fashion_poc_assert( count( $featured->get_gallery_image_ids() ) >= 2, 'featured product gallery needs at least two supporting images' );
 fashion_poc_assert( function_exists( 'fashion_child_render_loop_brand' ), 'archive brand renderer is missing' );
 fashion_poc_assert( function_exists( 'fashion_child_render_loop_badges' ), 'archive badge renderer is missing' );
 fashion_poc_assert( function_exists( 'fashion_child_catalog_title' ), 'archive title adapter is missing' );
 fashion_poc_assert( '전체 상품' === fashion_child_catalog_title( 'Shop' ), 'Shop title is not Korean' );
 
-$previous_product = $GLOBALS['product'] ?? null;
+$previous_product    = $GLOBALS['product'] ?? null;
 $GLOBALS['product'] = $featured;
 ob_start();
 fashion_child_render_loop_brand();
 fashion_child_render_loop_badges();
-$loop_meta_markup = ob_get_clean();
+$loop_meta_markup    = ob_get_clean();
 $GLOBALS['product'] = $previous_product;
-fashion_poc_assert( false !== strpos( $loop_meta_markup, 'NORTH ARC' ), 'archive card lacks brand' );
+fashion_poc_assert( false !== strpos( $loop_meta_markup, 'NORTH ARC' ), 'archive card lacks taxonomy-backed brand' );
 fashion_poc_assert( false !== strpos( $loop_meta_markup, 'NEW' ), 'archive card lacks NEW badge' );
 fashion_poc_assert( false !== strpos( $loop_meta_markup, 'BEST' ), 'archive card lacks BEST badge' );
 fashion_poc_assert( false !== strpos( $loop_meta_markup, 'SALE' ), 'archive card lacks SALE badge' );
@@ -135,6 +201,11 @@ $orders = wc_get_orders(
 		'return' => 'ids',
 	)
 );
-fashion_poc_assert( array() === $orders, 'the prototype must contain no orders' );
+fashion_poc_assert( array() === $orders, 'the foundation runtime must contain no orders' );
 
-printf( "RUNTIME_DATA_PASS products=%d unique_skus=%d orders=0\n", count( $products ), count( array_unique( $skus ) ) );
+printf(
+	"RUNTIME_DATA_PASS products=%d unique_skus=%d brands=%d orders=0\n",
+	count( $products ),
+	count( array_unique( $skus ) ),
+	count( $brand_slugs )
+);
