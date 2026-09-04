@@ -66,6 +66,8 @@
 - WordPress 官方 Companion API：<https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=blocksy-companion>
 - Product Archives：<https://creativethemes.com/blocksy/docs/woocommerce/product-archives/>
 - Single Product：<https://creativethemes.com/blocksy/docs/woocommerce/single-product/>
+- Content Blocks（含 Custom Templates / Display Conditions）：<https://creativethemes.com/blocksy/docs/extensions/content-blocks/>
+- Advanced Menu：<https://creativethemes.com/blocksy/docs/extensions/advanced-menu/>
 - Product Sale Countdown：<https://creativethemes.com/blocksy/docs/woocommerce/product-sale-countdown/>
 - Advanced Product Reviews：<https://creativethemes.com/blocksy/docs/woocommerce/advanced-woocommerce-product-reviews/>
 - Garderobe 说明：<https://creativethemes.com/blocksy/starter-site/garderobe/>
@@ -189,7 +191,7 @@ WoodMart 与 Blocksy Pro 都会扩展 WooCommerce 原生评价；Rey 若使用�
 ### 10.1 来源、核心插件与 Builder
 
 1. 只从 ThemeForest 正版页购买 WoodMart Regular License，并按 XTemos 官方安装流程取得父主题包；不使用二手、共享或破解包。
-2. 父主题为 `woodmart`；必装并同版维护官方 **WoodMart Core** companion 插件。
+2. 父主题为 `woodmart`；必装该 WoodMart 发布包所对应的兼容 **WoodMart Core** companion 插件。主题与 Core 在同一维护窗口升级，但两者有独立版本线，必须分别记录版本号，不能要求数字版本相同。
 3. Builder 选择 **Gutenberg**。Fashion 2 的 Product Loop 官方路径本身使用 Gutenberg；不安装 Elementor 或 WPBakery，不为 Demo 同时保留第二套 Builder。
 4. 推荐 Starter / Demo 为 **Fashion 2**，但只允许导入隔离本地原型。不得直接导入 Hostinger；导入前记录会创建的页面、媒体、菜单、模板和设置，原型验收后只迁移确认内容。
 
@@ -214,13 +216,13 @@ WoodMart 与 Blocksy Pro 都会扩展 WooCommerce 原生评价；Rey 若使用�
 
 1. 所有项目定制只放 Child Theme / 项目小插件，不直接改父主题或 WoodMart Core。
 2. 每次升级先在隔离原型克隆验证，并备份数据库、`wp-content` 中相关文件和当前版本清单。
-3. WoodMart 与 WoodMart Core 按官方要求同轮升级；检查 WooCommerce Status 中模板覆盖差异，逐一重放必要 Child Theme override。
+3. WoodMart 与其兼容的 WoodMart Core 按官方要求在同一维护窗口升级并分别记录版本；检查 WooCommerce Status 中模板覆盖差异，逐一重放必要 Child Theme override。
 4. 回归手机首页、分类/品牌/搜索结果、商品详情、促销价/倒计时、韩文排版、FiboSearch、图片评价、Kakao 链接，以及购物车/结账/账户入口和直接 URL 均不可进入交易流程。
 5. 只有独立验证通过且获得明确部署授权，才进入线上；本报告不授权升级或部署。
 
 ### 10.5 模块白名单
 
-预计保留：WooCommerce 基础集成、Gutenberg Product Loop / Layouts Builder、Header Builder / Mega Menu、分类/品牌/筛选/分页、Sale Price 与倒计时、Blog / Shop the Look、必要的图片优化/按需资源、最终选定的一套搜索和一套评价展示。
+预计保留：WooCommerce 基础集成、Gutenberg Product Loop / Layouts Builder、Header Builder / Mega Menu、分类/品牌/筛选/分页、Sale Price 与倒计时、Blog / Shop the Look、最终选定的一套搜索和一套评价展示。现有环境已安装 LiteSpeed Cache；性能基线默认让 LiteSpeed 单独负责页面缓存、图片 lazy-load / 优化和前端资源优化，并关闭 WoodMart 中功能重叠的开关。只有 P3-T002 隔离环境 A/B 证据证明需要时，才调整单一责任方，禁止两套优化同时生效。
 
 预计关闭：Cart / Checkout / My Account、Add to Cart / Quick Shop、Wishlist / Compare、Waitlist、Abandoned Cart、Free Gifts、Dynamic Discounts、Social Login、多供应商、复杂变体/Size Guide，以及与项目范围无关的交易营销模块。实际开关清单须由 P3-T002 原型证据确认。
 
@@ -250,7 +252,7 @@ WoodMart 与 Blocksy Pro 都会扩展 WooCommerce 原生评价；Rey 若使用�
 2. 在隔离本地原型安装正版 WoodMart + WoodMart Core + Gutenberg Fashion 2；不导入生产数据、不部署 Hostinger；
 3. 用 20–30 件无真实业务数据的代表 Simple Product 验证手机首页、分类/品牌/搜索结果、商品详情、Sale Price / schedule / countdown、Blog / Shop the Look；
 4. 验证韩文排版、FiboSearch、图片评价后台完整流程、Kakao/复制链接，以及购物车/结账/账户的 UI 和直接路由关闭；
-5. 记录插件/模块白名单，测量数千商品规模的查询、分页/筛选与移动端性能风险；
+5. 视觉/功能样本不冒充大目录压测；另在隔离环境生成至少 3,000 条不含真实业务数据的合成 Simple Product，记录冷/热缓存 TTFB、峰值内存、数据库查询数、分类分页/筛选响应、FiboSearch 建索引时间及搜索响应，再据此判断数千商品风险；
 6. 形成新的独立报告和验收门，不把本报告视为 P3-T002 PASS，不触碰生产。
 
 本任务在报告和 PR 创建后停止，等待 GPT 独立验收；不自行 merge，不开始 P3-T002。
