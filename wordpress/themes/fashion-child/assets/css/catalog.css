@@ -479,12 +479,6 @@ select:focus-visible {
   color: var(--fashion-sale);
 }
 
-.fashion-prototype-note {
-  color: var(--fashion-muted);
-  font-size: 11px;
-  margin: 4px 0 0;
-}
-
 .fashion-bottom-nav {
   display: none;
 }

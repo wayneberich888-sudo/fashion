@@ -49,6 +49,7 @@ services:
     volumes:
       - wp_data:/var/www/html
       - ../../wordpress/themes/fashion-child:/var/www/html/wp-content/themes/fashion-child:ro
+      - ../../wordpress/plugins/fashion-core:/var/www/html/wp-content/plugins/fashion-core:ro
     networks:
       - poc_frontend
       - poc_internal
@@ -75,6 +76,7 @@ services:
     volumes:
       - wp_data:/var/www/html
       - ../../wordpress/themes/fashion-child:/var/www/html/wp-content/themes/fashion-child:ro
+      - ../../wordpress/plugins/fashion-core:/var/www/html/wp-content/plugins/fashion-core:ro
       - ./bin:/workspace/bin:ro
       - ./seed:/workspace/seed:ro
       - ./tests:/workspace/tests:ro

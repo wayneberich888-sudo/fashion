@@ -32,7 +32,7 @@ $shop_url = wc_get_page_permalink( 'shop' );
 			<p>신발부터 향수까지, 지금 주목할 상품을 한눈에 만나보세요.</p>
 			<a class="fashion-text-link" href="<?php echo esc_url( $shop_url ); ?>">컬렉션 보기 <span aria-hidden="true">→</span></a>
 		</div>
-		<div class="fashion-hero__art" role="img" aria-label="검정과 회색으로 구성한 합성 패션 에디토리얼 이미지">
+		<div class="fashion-hero__art" role="img" aria-label="검정과 회색으로 구성한 패션 에디토리얼 이미지">
 			<span class="fashion-hero__shape fashion-hero__shape--one"></span>
 			<span class="fashion-hero__shape fashion-hero__shape--two"></span>
 			<span class="fashion-hero__index">01 / 25</span>
@@ -43,7 +43,7 @@ $shop_url = wc_get_page_permalink( 'shop' );
 	<?php fashion_child_render_collection( 'best', 'MOST WANTED', '지금 가장 많이 보는 상품' ); ?>
 
 	<section class="fashion-editorial" aria-labelledby="fashion-editorial-title">
-		<div class="fashion-editorial__art" role="img" aria-label="합성 스톤 컬러 스타일링 이미지">
+		<div class="fashion-editorial__art" role="img" aria-label="스톤 컬러 스타일링 이미지">
 			<span>EDITORIAL 01</span>
 		</div>
 		<div class="fashion-editorial__copy">
@@ -56,24 +56,7 @@ $shop_url = wc_get_page_permalink( 'shop' );
 
 	<?php fashion_child_render_collection( 'sale', 'LIMITED TIME', '세일이 끝나기 전에' ); ?>
 
-	<section class="fashion-review" aria-labelledby="fashion-review-title">
-		<header class="fashion-section-heading">
-			<div>
-				<p>REAL NOTES</p>
-				<h2 id="fashion-review-title">먼저 경험한 이야기</h2>
-			</div>
-		</header>
-		<div class="fashion-review__grid">
-			<blockquote>
-				<p>“사진보다 실루엣이 더 깔끔하고, 어떤 옷에도 차분하게 어울려요.”</p>
-				<footer><span aria-label="별점 5점">★★★★★</span> 민서 K. · 합성 리뷰</footer>
-			</blockquote>
-			<blockquote>
-				<p>“상품 정보가 한눈에 보여서 상담할 모델을 고르기 편했습니다.”</p>
-				<footer><span aria-label="별점 4점">★★★★☆</span> 지우 P. · 합성 리뷰</footer>
-			</blockquote>
-		</div>
-	</section>
+	<?php fashion_child_render_reviews(); ?>
 </main>
 
 <nav class="fashion-bottom-nav" aria-label="모바일 빠른 메뉴">

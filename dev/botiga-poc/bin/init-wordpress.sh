@@ -17,7 +17,7 @@ if ! wp core is-installed --allow-root >/dev/null 2>&1; then
   wp core install \
     --allow-root \
     --url='http://127.0.0.1:8097' \
-    --title='FASHION POC' \
+    --title='FASHION' \
     --admin_user='poc_admin' \
     --admin_password="$(cat /run/secrets/wp_admin_password)" \
     --admin_email='poc@example.invalid' \
@@ -58,6 +58,10 @@ if ! wp plugin is-active woocommerce --allow-root; then
   wp plugin activate woocommerce --allow-root
 fi
 
+if ! wp plugin is-active fashion-core --allow-root; then
+  wp plugin activate fashion-core --allow-root
+fi
+
 if [ "$(wp option get stylesheet --allow-root)" != 'fashion-child' ]; then
   wp theme activate fashion-child --allow-root
 fi
@@ -73,7 +77,8 @@ if ! wp language plugin list woocommerce --status=installed --field=language --a
 fi
 
 wp option update timezone_string 'Asia/Seoul' --allow-root >/dev/null
-wp option update blogdescription '한국 모바일 패션 카탈로그 프로토타입' --allow-root >/dev/null
+wp option update blogname 'FASHION' --allow-root >/dev/null
+wp option update blogdescription '한국 모바일 패션 카탈로그' --allow-root >/dev/null
 wp rewrite structure '/%postname%/' --allow-root >/dev/null
 
 if [ -f /workspace/seed/catalog.php ]; then
@@ -84,5 +89,6 @@ wp rewrite flush --allow-root >/dev/null
 
 printf 'WORDPRESS_VERSION=%s\n' "$(wp core version --allow-root)"
 printf 'WOOCOMMERCE_VERSION=%s\n' "$(wp plugin get woocommerce --field=version --allow-root)"
+printf 'FASHION_CORE_VERSION=%s\n' "$(wp plugin get fashion-core --field=version --allow-root)"
 printf 'BOTIGA_VERSION=%s\n' "$(wp theme get botiga --field=version --allow-root)"
 printf 'ACTIVE_STYLESHEET=%s\n' "$(wp option get stylesheet --allow-root)"

@@ -171,6 +171,27 @@ $products = array(
 	array( 'FPOC-025', 'QUIET LAB', '미니멀 체인 네크리스', 'accessories', 129000, 99000, array( 'new' ) ),
 );
 
+if ( ! function_exists( 'fashion_core_brand_taxonomy' ) ) {
+	throw new RuntimeException( 'Fashion Core must be active before seeding brands.' );
+}
+
+$brand_taxonomy = fashion_core_brand_taxonomy();
+if ( ! taxonomy_exists( $brand_taxonomy ) ) {
+	throw new RuntimeException( 'The formal brand taxonomy is unavailable.' );
+}
+
+$brand_ids = array();
+foreach ( $products as $product_data ) {
+	$brand_name = $product_data[1];
+	if ( ! isset( $brand_ids[ $brand_name ] ) ) {
+		$brand_ids[ $brand_name ] = fashion_poc_upsert_term(
+			$brand_taxonomy,
+			$brand_name,
+			sanitize_title( $brand_name )
+		);
+	}
+}
+
 $sale_start = strtotime( '-1 day' );
 $sale_end   = strtotime( '+14 days 23:59:59' );
 
@@ -204,7 +225,7 @@ foreach ( $products as $index => $data ) {
 	);
 	$product->set_short_description( '절제된 실루엣과 편안한 사용감을 담은 합성 프로토타입 상품입니다.' );
 	$product->set_description( '본 상품과 이미지는 테마 검증을 위해 만든 가상 데이터입니다. 실제 판매 또는 주문에 사용되지 않습니다.' );
-	$product->update_meta_data( '_fashion_brand', $brand );
+	$product->delete_meta_data( '_fashion_brand' );
 
 	if ( null !== $sale_price ) {
 		$product->set_sale_price( (string) $sale_price );
@@ -217,6 +238,10 @@ foreach ( $products as $index => $data ) {
 	}
 
 	$product_id = $product->save();
+	$brand_result = wp_set_object_terms( $product_id, array( $brand_ids[ $brand ] ), $brand_taxonomy, false );
+	if ( is_wp_error( $brand_result ) ) {
+		throw new RuntimeException( $brand_result->get_error_message() );
+	}
 	if ( 0 === $index ) {
 		update_option( 'fashion_poc_featured_product_id', $product_id, false );
 	}

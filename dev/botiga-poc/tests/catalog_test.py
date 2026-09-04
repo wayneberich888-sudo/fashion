@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Browser acceptance and evidence capture for the local Botiga prototype."""
+"""Browser acceptance and evidence capture for the Botiga storefront foundation."""
 
 from __future__ import annotations
 
@@ -21,10 +21,14 @@ PAGES = {
     "category": "/product-category/shoes/",
     "product": PRODUCT_PATH,
 }
+TRANSACTION_PATHS = ("/cart/", "/checkout/", "/my-account/")
 REPO_ROOT = Path(__file__).resolve().parents[3]
-EVIDENCE_DIR = REPO_ROOT / "docs" / "evidence" / "p3-t001-alt001"
+EVIDENCE_DIR = REPO_ROOT / "docs" / "evidence" / "p3-t002"
 FORBIDDEN_TRANSACTION_TEXT = re.compile(
     r"장바구니|결제|내 계정|Cart|Checkout|My Account|Add to cart", re.IGNORECASE
+)
+FORBIDDEN_POC_COPY = re.compile(
+    r"Local-only|FASHION POC|로컬 프로토타입|실제 상담 계정", re.IGNORECASE
 )
 
 
@@ -81,6 +85,23 @@ def goto(page: Page, path: str) -> None:
     )
     forbidden = page.locator("a, button").filter(has_text=FORBIDDEN_TRANSACTION_TEXT)
     assert forbidden.count() == 0, f"transaction affordance visible at {path}"
+    assert not FORBIDDEN_POC_COPY.search(page.locator("body").inner_text()), (
+        f"customer-facing prototype copy visible at {path}"
+    )
+
+
+def assert_transaction_routes_redirect(page: Page) -> None:
+    """Direct transaction URLs must finish at the catalog or home."""
+    allowed_urls = {
+        canonical_url(BASE_URL + "/"),
+        canonical_url(BASE_URL + "/shop/"),
+    }
+    for path in TRANSACTION_PATHS:
+        response = page.goto(BASE_URL + path, wait_until="networkidle")
+        assert response is not None and response.status < 500, f"unhealthy transaction route: {path}"
+        assert canonical_url(page.url) in allowed_urls, (
+            f"transaction route did not redirect to catalog/home: {path} -> {page.url}"
+        )
 
 
 def assert_touch_targets(page: Page) -> None:
@@ -155,6 +176,8 @@ def assert_product_interactions(page: Page, context: BrowserContext) -> None:
     support = page.locator('[data-product-sku="FPOC-001"]')
     assert support.is_visible()
     assert support.get_attribute("data-product-url") == canonical_url(page.url)
+    assert page.locator(".fashion-product-brand").inner_text() == "NORTH ARC"
+    assert page.locator(".fashion-prototype-note").count() == 0
 
     countdown = page.locator("[data-sale-end]")
     assert countdown.is_visible()
@@ -206,6 +229,8 @@ def run_viewport(context: BrowserContext, width: int, height: int, capture_mode:
     page = context.new_page()
     page.set_viewport_size({"width": width, "height": height})
     failures = attach_failure_guards(page)
+
+    assert_transaction_routes_redirect(page)
 
     for key in ("home", "shop", "category", "product"):
         goto(page, PAGES[key])

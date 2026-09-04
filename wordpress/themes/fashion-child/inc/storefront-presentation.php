@@ -1,6 +1,6 @@
 <?php
 /**
- * Display-only WooCommerce behavior for the prototype.
+ * Theme-specific presentation adapters for the display catalog.
  *
  * @package Fashion_Child
  */
@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Remove purchase components from Botiga's component arrays.
+ * Remove purchase components from the single-product presentation.
  *
  * @param array $components Component names.
  * @return array
@@ -27,7 +27,7 @@ add_filter( 'botiga_default_single_product_components', 'fashion_child_without_p
 add_filter( 'theme_mod_single_product_elements_order', 'fashion_child_without_purchase_components' );
 
 /**
- * Remove WooCommerce icon groups from Botiga's default header positions.
+ * Remove commerce icon groups from the parent theme's header positions.
  *
  * @param array $groups Header component groups.
  * @return array
@@ -59,31 +59,16 @@ foreach (
 }
 
 /**
- * Remove standard purchase controls after WooCommerce and Botiga register them.
+ * Remove empty parent-theme wrappers after the core plugin removes the form.
  */
-function fashion_child_remove_purchase_actions() {
-	remove_action( 'woocommerce_after_shop_loop_item', 'woocommerce_template_loop_add_to_cart', 10 );
-	remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_add_to_cart', 30 );
+function fashion_child_remove_purchase_wrappers() {
 	remove_action( 'woocommerce_before_add_to_cart_button', 'botiga_single_addtocart_wrapper_open' );
 	remove_action( 'woocommerce_after_add_to_cart_button', 'botiga_single_addtocart_wrapper_close' );
 }
-add_action( 'wp', 'fashion_child_remove_purchase_actions', 100 );
+add_action( 'wp', 'fashion_child_remove_purchase_wrappers', 100 );
 
 /**
- * Mark products non-purchasable in the public prototype.
- *
- * @param bool       $purchasable Existing state.
- * @param WC_Product $product     Current product.
- * @return bool
- */
-function fashion_child_catalog_is_purchasable( $purchasable, $product ) {
-	unset( $purchasable, $product );
-	return false;
-}
-add_filter( 'woocommerce_is_purchasable', 'fashion_child_catalog_is_purchasable', 100, 2 );
-
-/**
- * Add a stable body class for the display-only presentation.
+ * Add a stable body class for display-only styling.
  *
  * @param string[] $classes Existing classes.
  * @return string[]
