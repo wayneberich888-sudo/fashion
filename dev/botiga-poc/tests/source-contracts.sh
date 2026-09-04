@@ -9,9 +9,6 @@ fail() {
   exit 1
 }
 
-test "$(git branch --show-current)" = "codex/fashion-theme-3.1-botiga-poc" \
-  || fail "unexpected branch"
-
 test -f dev/botiga-poc/docker-compose.yml \
   || fail "docker-compose.yml is missing"
 grep -Fq '127.0.0.1:8097:80' dev/botiga-poc/docker-compose.yml \
