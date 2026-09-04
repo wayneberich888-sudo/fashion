@@ -5,7 +5,7 @@
 - 任务：`P3-T002`
 - 分支：`codex/fashion-theme-3.2-foundation`
 - 基线：执行前同步后的 `origin/main`，起始 SHA `1cd2b35266ef7591286c97e4426d4c55d24c8a0f`
-- Draft PR：待创建
+- Draft PR：[#7](https://github.com/wayneberich888-sudo/fashion/pull/7)，目标 `main`，状态 Draft/Open
 - 当前结论：本地正式化与自动验收完成，等待 GPT 独立验收；不代表已合并或已部署。
 
 ## 2. README 路线更新
