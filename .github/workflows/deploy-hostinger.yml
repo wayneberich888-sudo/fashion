@@ -1,0 +1,141 @@
+name: Deploy to Hostinger
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Preview the deployment without changing server files
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fashion-hostinger-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: ${{ inputs.dry_run && 'Dry run' || 'Deploy' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+      HOSTINGER_SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+      HOSTINGER_SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+      HOSTINGER_WP_PATH: ${{ secrets.HOSTINGER_WP_PATH }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          HOSTINGER_SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$HOSTINGER_SSH_PRIVATE_KEY" > "$HOME/.ssh/hostinger_deploy"
+          chmod 600 "$HOME/.ssh/hostinger_deploy"
+
+          keyscan_file="$(mktemp)"
+          trap 'rm -f "$keyscan_file"' EXIT
+          ssh-keyscan -T 10 -p "$HOSTINGER_SSH_PORT" -H "$HOSTINGER_SSH_HOST" > "$keyscan_file"
+          test -s "$keyscan_file"
+          cat "$keyscan_file" >> "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Preflight Hostinger paths
+        run: |
+          set -euo pipefail
+          ssh \
+            -i "$HOME/.ssh/hostinger_deploy" \
+            -p "$HOSTINGER_SSH_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST" \
+            bash -s -- "$HOSTINGER_WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"
+          test -n "$wp_path"
+          test -d "$wp_path/wp-content"
+          test -w "$wp_path/wp-content/themes"
+          test -w "$wp_path/wp-content/plugins"
+          echo "Hostinger path preflight passed."
+          REMOTE
+
+      - name: Back up existing project directories
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          ssh \
+            -i "$HOME/.ssh/hostinger_deploy" \
+            -p "$HOSTINGER_SSH_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST" \
+            bash -s -- "$HOSTINGER_WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"
+          backup_root="$HOME/fashion-deploy-backups/$(date -u +'%Y%m%dT%H%M%SZ')"
+          backup_created=false
+
+          backup_if_nonempty() {
+            source_dir="$1"
+            backup_parent="$2"
+            if [ -d "$source_dir" ] && [ -n "$(find "$source_dir" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+              mkdir -p "$backup_root/$backup_parent"
+              cp -a "$source_dir" "$backup_root/$backup_parent/"
+              backup_created=true
+            fi
+          }
+
+          backup_if_nonempty "$wp_path/wp-content/themes/fashion-child" "wp-content/themes"
+          backup_if_nonempty "$wp_path/wp-content/plugins/fashion-core" "wp-content/plugins"
+
+          if [ "$backup_created" = true ]; then
+            echo "Existing project directories backed up."
+          else
+            echo "No existing project files required backup."
+          fi
+          REMOTE
+
+      - name: Preview project directory sync
+        if: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          rsync_ssh="ssh -i $HOME/.ssh/hostinger_deploy -p $HOSTINGER_SSH_PORT -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+
+          rsync -az --delete --dry-run --itemize-changes \
+            -e "$rsync_ssh" \
+            -- wordpress/themes/fashion-child/ \
+            "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST:$HOSTINGER_WP_PATH/wp-content/themes/fashion-child/"
+
+          rsync -az --delete --dry-run --itemize-changes \
+            -e "$rsync_ssh" \
+            -- wordpress/plugins/fashion-core/ \
+            "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST:$HOSTINGER_WP_PATH/wp-content/plugins/fashion-core/"
+
+          echo "Dry run completed; no server files were changed."
+
+      - name: Deploy project directories
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          rsync_ssh="ssh -i $HOME/.ssh/hostinger_deploy -p $HOSTINGER_SSH_PORT -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+
+          rsync -az --delete --itemize-changes \
+            -e "$rsync_ssh" \
+            -- wordpress/themes/fashion-child/ \
+            "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST:$HOSTINGER_WP_PATH/wp-content/themes/fashion-child/"
+
+          rsync -az --delete --itemize-changes \
+            -e "$rsync_ssh" \
+            -- wordpress/plugins/fashion-core/ \
+            "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST:$HOSTINGER_WP_PATH/wp-content/plugins/fashion-core/"
