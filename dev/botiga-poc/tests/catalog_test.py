@@ -118,6 +118,23 @@ def assert_product_name_clamp(page: Page) -> None:
     )
 
 
+def assert_archive_grid(page: Page, expected_columns: int) -> None:
+    positions = page.locator("ul.products li.product").evaluate_all(
+        """elements => elements.slice(0, 5).map(element => {
+          const rect = element.getBoundingClientRect();
+          return {x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width)};
+        })"""
+    )
+    assert len(positions) > expected_columns, "archive has too few products for grid proof"
+    first_row = positions[:expected_columns]
+    assert len({item["y"] for item in first_row}) == 1, f"grid first row is unstable: {first_row}"
+    assert positions[expected_columns]["y"] > first_row[0]["y"], (
+        f"expected {expected_columns} archive columns: {positions}"
+    )
+    assert page.locator(".fashion-loop-brand").first.is_visible()
+    assert page.locator(".fashion-product-badges").first.is_visible()
+
+
 def assert_bottom_nav_clear(page: Page) -> None:
     page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
     page.wait_for_timeout(100)
@@ -195,10 +212,18 @@ def run_viewport(context: BrowserContext, width: int, height: int, capture_mode:
         assert_touch_targets(page)
         if key in ("shop", "category"):
             assert_product_name_clamp(page)
+            assert_archive_grid(page, 2 if width < 768 else 4)
         if key == "product":
             assert page.locator(".woocommerce-product-gallery__image").count() >= 3
+            assert page.locator(".summary .price del").is_visible()
+            assert page.locator(".summary .price ins").is_visible()
+            assert page.locator("form.cart, .quantity, .single_add_to_cart_button").count() == 0
             assert page.locator("#tab-title-reviews").is_visible()
             assert page.locator(".related.products").is_visible()
+
+        if key == "home":
+            for collection in ("new", "best", "sale"):
+                assert page.locator(f"#{collection} .fashion-product-card").count() >= 1
 
     goto(page, PAGES["product"])
     assert_product_interactions(page, context)
